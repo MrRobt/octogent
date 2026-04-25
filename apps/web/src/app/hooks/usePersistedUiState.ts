@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { buildUiStateUrl } from "../../runtime/runtimeEndpoints";
 import type { PrimaryNavIndex } from "../constants";
 import { MIN_SIDEBAR_WIDTH, PRIMARY_NAV_ITEMS, UI_STATE_SAVE_DEBOUNCE_MS } from "../constants";
+import { type AppLanguage, DEFAULT_LANGUAGE } from "../i18n";
 import {
   DEFAULT_TERMINAL_COMPLETION_SOUND,
   type TerminalCompletionSoundId,
@@ -80,6 +81,7 @@ const buildPersistedUiStateSnapshot = ({
   canvasOpenTerminalIds,
   canvasOpenTentacleIds,
   canvasTerminalsPanelWidth,
+  language,
 }: {
   activePrimaryNav: PrimaryNavIndex;
   isAgentsSidebarVisible: boolean;
@@ -98,6 +100,7 @@ const buildPersistedUiStateSnapshot = ({
   canvasOpenTerminalIds: string[];
   canvasOpenTentacleIds: string[];
   canvasTerminalsPanelWidth: number | null;
+  language: AppLanguage;
 }): FrontendUiStateSnapshot => ({
   activePrimaryNav,
   isAgentsSidebarVisible,
@@ -116,6 +119,7 @@ const buildPersistedUiStateSnapshot = ({
   canvasOpenTerminalIds,
   canvasOpenTentacleIds,
   ...(canvasTerminalsPanelWidth != null ? { canvasTerminalsPanelWidth } : {}),
+  language,
 });
 
 const areUiStateSnapshotsEqual = (
@@ -139,7 +143,8 @@ const areUiStateSnapshotsEqual = (
   areNumberRecordMapsEqual(left.terminalWidths, right.terminalWidths) &&
   areStringArraysEqual(left.canvasOpenTerminalIds, right.canvasOpenTerminalIds) &&
   areStringArraysEqual(left.canvasOpenTentacleIds, right.canvasOpenTentacleIds) &&
-  left.canvasTerminalsPanelWidth === right.canvasTerminalsPanelWidth;
+  left.canvasTerminalsPanelWidth === right.canvasTerminalsPanelWidth &&
+  left.language === right.language;
 
 type UsePersistedUiStateResult = {
   activePrimaryNav: PrimaryNavIndex;
@@ -179,6 +184,8 @@ type UsePersistedUiStateResult = {
   setCanvasOpenTentacleIds: Dispatch<SetStateAction<string[]>>;
   canvasTerminalsPanelWidth: number | null;
   setCanvasTerminalsPanelWidth: Dispatch<SetStateAction<number | null>>;
+  language: AppLanguage;
+  setLanguage: Dispatch<SetStateAction<AppLanguage>>;
   readUiState: (signal?: AbortSignal) => Promise<FrontendUiStateSnapshot | null>;
   applyHydratedUiState: (
     snapshot: FrontendUiStateSnapshot | null,
@@ -231,6 +238,7 @@ export const usePersistedUiState = ({
     DEFAULT_CANVAS_OPEN_TENTACLE_IDS,
   );
   const [canvasTerminalsPanelWidth, setCanvasTerminalsPanelWidth] = useState<number | null>(null);
+  const [language, setLanguage] = useState<AppLanguage>(DEFAULT_LANGUAGE);
   const lastPersistedUiStateRef = useRef<FrontendUiStateSnapshot | null>(null);
 
   const readUiState = useCallback(async (signal?: AbortSignal) => {
@@ -286,6 +294,7 @@ export const usePersistedUiState = ({
           canvasOpenTerminalIds: DEFAULT_CANVAS_OPEN_TERMINAL_IDS,
           canvasOpenTentacleIds: DEFAULT_CANVAS_OPEN_TENTACLE_IDS,
           canvasTerminalsPanelWidth: null,
+          language: DEFAULT_LANGUAGE,
         });
         return;
       }
@@ -333,6 +342,7 @@ export const usePersistedUiState = ({
         canvasOpenTerminalIds: nextCanvasOpenTerminalIds,
         canvasOpenTentacleIds: nextCanvasOpenTentacleIds,
         canvasTerminalsPanelWidth: snapshot.canvasTerminalsPanelWidth ?? null,
+        language: snapshot.language ?? DEFAULT_LANGUAGE,
       });
 
       if (
@@ -406,6 +416,10 @@ export const usePersistedUiState = ({
       if (snapshot.canvasTerminalsPanelWidth !== undefined) {
         setCanvasTerminalsPanelWidth(snapshot.canvasTerminalsPanelWidth);
       }
+
+      if (snapshot.language !== undefined) {
+        setLanguage(snapshot.language);
+      }
     },
     [],
   );
@@ -442,6 +456,7 @@ export const usePersistedUiState = ({
       canvasOpenTerminalIds,
       canvasOpenTentacleIds,
       canvasTerminalsPanelWidth,
+      language,
     });
 
     if (areUiStateSnapshotsEqual(lastPersistedUiStateRef.current, payload)) {
@@ -486,6 +501,7 @@ export const usePersistedUiState = ({
     isClaudeUsageSectionExpanded,
     isCodexUsageSectionExpanded,
     isUiStateHydrated,
+    language,
     minimizedTerminalIds,
     sidebarWidth,
     terminalCompletionSound,
@@ -530,6 +546,8 @@ export const usePersistedUiState = ({
     setCanvasOpenTentacleIds,
     canvasTerminalsPanelWidth,
     setCanvasTerminalsPanelWidth,
+    language,
+    setLanguage,
     readUiState,
     applyHydratedUiState,
   };

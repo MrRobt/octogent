@@ -21,6 +21,18 @@ import {
   parseTerminalWorkspaceMode,
 } from "./terminalParsers";
 
+const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
+  "zh-CN":
+    "\n\nIMPORTANT: Please respond entirely in Simplified Chinese (简体中文). All explanations, analysis, code comments, and responses must be written in Chinese.",
+};
+
+const buildLanguageInstruction = (language: string | undefined): string => {
+  if (!language || language === "en") {
+    return "";
+  }
+  return LANGUAGE_INSTRUCTIONS[language] ?? "";
+};
+
 const buildTentacleInitialPrompt = (
   promptsDir: string,
   workspaceCwd: string,
@@ -237,6 +249,24 @@ export const handleTerminalsCollectionRoute: ApiRouteHandler = async (
       );
       if (defaultTentaclePrompt) {
         createTerminalInput.initialInputDraft = defaultTentaclePrompt;
+      }
+    }
+
+    const requestedLanguage =
+      bodyPayload &&
+      typeof bodyPayload.language === "string" &&
+      bodyPayload.language.trim().length > 0
+        ? bodyPayload.language.trim()
+        : undefined;
+
+    const languageInstruction = buildLanguageInstruction(requestedLanguage);
+    if (languageInstruction) {
+      if (createTerminalInput.initialPrompt) {
+        createTerminalInput.initialPrompt += languageInstruction;
+      } else if (createTerminalInput.initialInputDraft) {
+        createTerminalInput.initialInputDraft += languageInstruction;
+      } else {
+        createTerminalInput.initialInputDraft = languageInstruction.trimStart();
       }
     }
 

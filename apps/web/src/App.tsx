@@ -96,6 +96,8 @@ export const App = () => {
     setCanvasOpenTentacleIds,
     canvasTerminalsPanelWidth,
     setCanvasTerminalsPanelWidth,
+    language,
+    setLanguage,
   } = usePersistedUiState({ columns: terminals });
   const {
     workspaceSetup,
@@ -149,6 +151,7 @@ export const App = () => {
     setColumns: setTerminals,
     setLoadError,
     setMinimizedTerminalIds,
+    language,
   });
 
   const {
@@ -431,6 +434,7 @@ export const App = () => {
 
       <ConsolePrimaryNav
         activePrimaryNav={activePrimaryNav}
+        language={language}
         onPrimaryNavChange={setActivePrimaryNav}
       />
 
@@ -503,6 +507,8 @@ export const App = () => {
             settingsPrimaryViewProps={{
               isMonitorVisible,
               isRuntimeStatusStripVisible,
+              language,
+              onLanguageChange: setLanguage,
               onMonitorVisibilityChange: setIsMonitorVisible,
               onRuntimeStatusStripVisibilityChange: setIsRuntimeStatusStripVisible,
               onPreviewTerminalCompletionSound: playCompletionSoundPreview,
@@ -531,6 +537,7 @@ export const App = () => {
                     workspaceMode: "shared",
                     agentProvider: "claude-code",
                     promptTemplate: "tentacle-planner",
+                    ...(language && language !== "en" ? { language } : {}),
                   }),
                 });
                 if (!response.ok) {
@@ -583,6 +590,7 @@ export const App = () => {
                     workspaceMode: "shared",
                     tentacleId: OCTOBOSS_ID,
                     promptTemplate: action,
+                    ...(language && language !== "en" ? { language } : {}),
                   }),
                 });
                 if (!response.ok) return undefined;
@@ -601,6 +609,7 @@ export const App = () => {
                     promptVariables: {
                       tentacleId,
                     },
+                    ...(language && language !== "en" ? { language } : {}),
                   }),
                 });
                 if (!response.ok) return undefined;
@@ -639,6 +648,7 @@ export const App = () => {
             onConversationsSidebarContent={setConversationsSidebarContent}
             onConversationsActionPanel={setConversationsActionPanel}
             promptsEnabled={isUiStateHydrated && activePrimaryNav === 7}
+            promptsLanguage={language}
             onPromptsSidebarContent={setPromptsSidebarContent}
           />
         </div>

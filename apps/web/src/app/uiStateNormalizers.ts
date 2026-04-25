@@ -1,6 +1,7 @@
 import { asRecord } from "@octogent/core";
 
 import { MAX_SIDEBAR_WIDTH, MIN_SIDEBAR_WIDTH, PRIMARY_NAV_MAX } from "./constants";
+import { APP_LANGUAGE_OPTIONS } from "./i18n";
 import { isTerminalCompletionSoundId } from "./notificationSounds";
 import type { FrontendUiStateSnapshot } from "./types";
 
@@ -68,6 +69,11 @@ export const normalizeFrontendUiStateSnapshot = (
   const completionSoundValue = record.terminalCompletionSound;
   if (isTerminalCompletionSoundId(completionSoundValue)) {
     nextState.terminalCompletionSound = completionSoundValue;
+  }
+
+  const validLanguageOption = APP_LANGUAGE_OPTIONS.find((opt) => opt.id === record.language);
+  if (validLanguageOption) {
+    nextState.language = validLanguageOption.id;
   }
 
   const minimizedIdsValue = record.minimizedTerminalIds;

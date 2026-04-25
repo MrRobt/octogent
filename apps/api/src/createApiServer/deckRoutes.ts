@@ -530,7 +530,10 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
     writeJson(
       response,
       400,
-      { error: "The octoboss node is virtual and cannot be swarmed directly. Select a specific tentacle." },
+      {
+        error:
+          "The octoboss node is virtual and cannot be swarmed directly. Select a specific tentacle.",
+      },
       corsOrigin,
     );
     return true;

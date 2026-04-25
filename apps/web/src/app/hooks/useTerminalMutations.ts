@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
+import type { AppLanguage } from "../i18n";
 import type { TerminalAgentProvider, TerminalView, TerminalWorkspaceMode } from "../types";
 
 export type PendingDeleteTerminal = {
@@ -15,6 +16,7 @@ type UseTerminalMutationsOptions = {
   setColumns: Dispatch<SetStateAction<TerminalView>>;
   setLoadError: Dispatch<SetStateAction<string | null>>;
   setMinimizedTerminalIds: Dispatch<SetStateAction<string[]>>;
+  language?: AppLanguage;
 };
 
 type UseTerminalMutationsResult = {
@@ -50,6 +52,7 @@ export const useTerminalMutations = ({
   setColumns,
   setLoadError,
   setMinimizedTerminalIds,
+  language,
 }: UseTerminalMutationsOptions): UseTerminalMutationsResult => {
   const [editingTerminalId, setEditingTerminalId] = useState<string | null>(null);
   const [terminalNameDraft, setTerminalNameDraft] = useState("");
@@ -132,6 +135,7 @@ export const useTerminalMutations = ({
             workspaceMode,
             agentProvider: agentProvider ?? "claude-code",
             ...(tentacleId ? { tentacleId } : {}),
+            ...(language && language !== "en" ? { language } : {}),
           }),
         });
 
@@ -168,7 +172,14 @@ export const useTerminalMutations = ({
         setIsCreatingTerminal(false);
       }
     },
-    [beginTerminalNameEdit, readColumns, setColumns, setLoadError, setMinimizedTerminalIds],
+    [
+      beginTerminalNameEdit,
+      language,
+      readColumns,
+      setColumns,
+      setLoadError,
+      setMinimizedTerminalIds,
+    ],
   );
 
   const requestDeleteTerminal = useCallback(

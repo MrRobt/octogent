@@ -1,6 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 
 import { usePromptLibrary } from "../app/hooks/usePromptLibrary";
+import type { AppLanguage } from "../app/i18n";
 import { SidebarPromptsList } from "./SidebarPromptsList";
 import { Terminal } from "./Terminal";
 import { ActionButton } from "./ui/ActionButton";
@@ -8,6 +9,7 @@ import { MarkdownContent } from "./ui/MarkdownContent";
 
 type PromptsPrimaryViewProps = {
   enabled: boolean;
+  language?: AppLanguage;
   onSidebarContent?: (content: ReactNode) => void;
 };
 
@@ -15,7 +17,11 @@ type NewPromptMode = {
   terminalId: string;
 } | null;
 
-export const PromptsPrimaryView = ({ enabled, onSidebarContent }: PromptsPrimaryViewProps) => {
+export const PromptsPrimaryView = ({
+  enabled,
+  language,
+  onSidebarContent,
+}: PromptsPrimaryViewProps) => {
   const {
     prompts,
     selectedPromptName,
@@ -90,6 +96,7 @@ export const PromptsPrimaryView = ({ enabled, onSidebarContent }: PromptsPrimary
           workspaceMode: "shared",
           agentProvider: "claude-code",
           promptTemplate: "meta-prompt-generator",
+          ...(language && language !== "en" ? { language } : {}),
         }),
       });
       if (!res.ok) throw new Error("Failed to create terminal");
@@ -103,7 +110,7 @@ export const PromptsPrimaryView = ({ enabled, onSidebarContent }: PromptsPrimary
     } finally {
       setIsCreatingTerminal(false);
     }
-  }, [onTerminalIdChange]);
+  }, [language, onTerminalIdChange]);
 
   useEffect(() => {
     if (newPromptRequestCount > 0) {

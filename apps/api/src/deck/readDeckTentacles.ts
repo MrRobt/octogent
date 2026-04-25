@@ -267,7 +267,8 @@ export const readDeckVaultFile = (
   fileName: string,
 ): string | null => {
   // Prevent path traversal (including backslash-based traversal on Windows).
-  if (tentacleId.includes("..") || tentacleId.includes("/") || tentacleId.includes("\\")) return null;
+  if (tentacleId.includes("..") || tentacleId.includes("/") || tentacleId.includes("\\"))
+    return null;
   if (fileName.includes("..") || fileName.includes("/") || fileName.includes("\\")) return null;
 
   const filePath = join(workspaceCwd, TENTACLES_DIR, tentacleId, fileName);

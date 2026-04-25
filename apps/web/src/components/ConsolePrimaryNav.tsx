@@ -1,12 +1,36 @@
 import { PRIMARY_NAV_ITEMS, type PrimaryNavIndex } from "../app/constants";
+import { type AppLanguage, t } from "../app/i18n";
+
+type NavLabelKey =
+  | "nav.agents"
+  | "nav.deck"
+  | "nav.activity"
+  | "nav.codeIntel"
+  | "nav.monitor"
+  | "nav.conversations"
+  | "nav.prompts"
+  | "nav.settings";
+
+const NAV_LABEL_KEYS: Record<PrimaryNavIndex, NavLabelKey> = {
+  1: "nav.agents",
+  2: "nav.deck",
+  3: "nav.activity",
+  4: "nav.codeIntel",
+  5: "nav.monitor",
+  6: "nav.conversations",
+  7: "nav.prompts",
+  8: "nav.settings",
+};
 
 type ConsolePrimaryNavProps = {
   activePrimaryNav: PrimaryNavIndex;
+  language: AppLanguage;
   onPrimaryNavChange: (index: PrimaryNavIndex) => void;
 };
 
 export const ConsolePrimaryNav = ({
   activePrimaryNav,
+  language,
   onPrimaryNavChange,
 }: ConsolePrimaryNavProps) => (
   <nav className="console-primary-nav" aria-label="Primary navigation">
@@ -22,10 +46,12 @@ export const ConsolePrimaryNav = ({
           }}
           type="button"
         >
-          [{item.index}] {item.label}
+          [{item.index}] {t(NAV_LABEL_KEYS[item.index], language)}
         </button>
       ))}
     </div>
-    <p className="console-primary-nav-hint">Press 1-{PRIMARY_NAV_ITEMS.length} to navigate</p>
+    <p className="console-primary-nav-hint">
+      {t("nav.pressHint", language).replace("{n}", String(PRIMARY_NAV_ITEMS.length))}
+    </p>
   </nav>
 );

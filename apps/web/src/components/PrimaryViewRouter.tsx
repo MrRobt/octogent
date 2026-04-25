@@ -32,6 +32,7 @@ type PrimaryViewRouterProps = {
   onConversationsSidebarContent: (content: ReactNode) => void;
   onConversationsActionPanel: (content: ReactNode) => void;
   promptsEnabled: boolean;
+  promptsLanguage?: ComponentProps<typeof PromptsPrimaryView>["language"];
   onPromptsSidebarContent: (content: ReactNode) => void;
 };
 
@@ -47,6 +48,7 @@ export const PrimaryViewRouter = ({
   onConversationsSidebarContent,
   onConversationsActionPanel,
   promptsEnabled,
+  promptsLanguage,
   onPromptsSidebarContent,
 }: PrimaryViewRouterProps) => {
   if (activePrimaryNav === 2) {
@@ -87,7 +89,11 @@ export const PrimaryViewRouter = ({
 
   if (activePrimaryNav === 7) {
     return (
-      <PromptsPrimaryView enabled={promptsEnabled} onSidebarContent={onPromptsSidebarContent} />
+      <PromptsPrimaryView
+        enabled={promptsEnabled}
+        {...(promptsLanguage !== undefined ? { language: promptsLanguage } : {})}
+        onSidebarContent={onPromptsSidebarContent}
+      />
     );
   }
 

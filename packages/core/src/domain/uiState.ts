@@ -1,6 +1,9 @@
 import type { TerminalCompletionSoundId } from "./completionSound";
 
+export type AppLanguage = "en" | "zh-CN";
+
 export type PersistedUiState = {
+  language?: AppLanguage;
   activePrimaryNav?: number;
   isAgentsSidebarVisible?: boolean;
   sidebarWidth?: number;
