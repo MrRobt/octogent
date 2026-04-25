@@ -10,6 +10,16 @@ import type {
 } from "./types";
 
 const DEFAULT_X_API_BASE_URL = "https://api.x.com";
+
+const toSafeHttpsUrl = (raw: string | undefined, fallback: string): string => {
+  if (!raw) return fallback;
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "https:" ? raw : fallback;
+  } catch {
+    return fallback;
+  }
+};
 const DEFAULT_X_USAGE_ENDPOINT_PATH = "/2/usage/tweets";
 const VALIDATION_QUERY = "lang:en -is:retweet";
 const MAX_RECENT_SEARCH_PAGES_PER_TERM = 5;
@@ -516,7 +526,7 @@ const fetchXUsage = async ({
 
 export const createXMonitorProvider = ({
   fetchFn = globalThis.fetch,
-  apiBaseUrl = process.env.OCTOGENT_X_API_BASE_URL ?? DEFAULT_X_API_BASE_URL,
+  apiBaseUrl = toSafeHttpsUrl(process.env.OCTOGENT_X_API_BASE_URL, DEFAULT_X_API_BASE_URL),
   usageEndpointPath = process.env.OCTOGENT_X_USAGE_ENDPOINT_PATH ?? DEFAULT_X_USAGE_ENDPOINT_PATH,
 }: {
   fetchFn?: typeof fetch;

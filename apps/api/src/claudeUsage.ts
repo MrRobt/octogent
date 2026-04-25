@@ -583,8 +583,8 @@ const spawnCliAndCapture = (binary: string): Promise<string | null> =>
 
           const collapsed = normalized.replace(/\s+/gu, "");
 
-          // Handle trust prompts
-          if (collapsed.includes("doyoutrust")) {
+          // Handle Claude CLI folder-trust prompts ("Do you trust the files in this folder? (y/n)").
+          if (collapsed.includes("doyoutrust") && collapsed.includes("y/n")) {
             try {
               term.write("y\r");
             } catch {

@@ -526,6 +526,16 @@ export const handleDeckTentacleSwarmRoute: ApiRouteHandler = async (
 
   const tentacleId = decodeURIComponent(match[1] as string);
 
+  if (tentacleId === "__octoboss__") {
+    writeJson(
+      response,
+      400,
+      { error: "The octoboss node is virtual and cannot be swarmed directly. Select a specific tentacle." },
+      corsOrigin,
+    );
+    return true;
+  }
+
   // Read and parse the tentacle's todo.md.
   const todoContent = readDeckVaultFile(workspaceCwd, tentacleId, "todo.md");
   if (todoContent === null) {

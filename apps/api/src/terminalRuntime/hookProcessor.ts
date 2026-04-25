@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import { logVerbose } from "../logging";
 import { parseClaudeTranscript } from "./claudeTranscript";
@@ -335,16 +335,25 @@ export const createHookProcessor = (deps: {
     }
 
     const hookPayload = payload as Record<string, unknown>;
-    const transcriptPath =
+    const rawTranscriptPath =
       typeof hookPayload.transcript_path === "string" ? hookPayload.transcript_path : null;
     const hookCwd = typeof hookPayload.cwd === "string" ? hookPayload.cwd : null;
 
-    logVerbose(`[Hook] Stop hook: transcriptPath=${transcriptPath}, hookCwd=${hookCwd}`);
+    logVerbose(`[Hook] Stop hook: transcriptPath=${rawTranscriptPath}, hookCwd=${hookCwd}`);
 
-    if (!transcriptPath || !hookCwd) {
+    if (!rawTranscriptPath || !hookCwd) {
       logVerbose("[Hook] Missing transcriptPath or hookCwd, skipping.");
       return { ok: true };
     }
+
+    // Guard against path traversal: transcript_path must reside inside the transcript directory.
+    const resolvedTranscriptDir = resolve(transcriptDirectoryPath);
+    const resolvedTranscriptPath = resolve(rawTranscriptPath);
+    if (!resolvedTranscriptPath.startsWith(resolvedTranscriptDir + "/")) {
+      logVerbose("[Hook] transcript_path outside allowed directory, skipping.");
+      return { ok: true };
+    }
+    const transcriptPath = resolvedTranscriptPath;
 
     let matchedSessionId: string | null = null;
 

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { extname, join } from "node:path";
+import { extname, join, resolve as resolvePath } from "node:path";
 
 import type { UsageChartResponse } from "../claudeSessionScanner";
 import type { ClaudeUsageSnapshot } from "../claudeUsage";
@@ -173,9 +173,13 @@ const serveStaticFile = async (
   webDistDir: string,
   pathname: string,
 ): Promise<boolean> => {
-  // Prevent path traversal.
-  const safePath = pathname.replace(/\.\./g, "").replace(/\/+/g, "/");
-  const filePath = join(webDistDir, safePath === "/" ? "index.html" : safePath);
+  // Prevent path traversal: resolve the full path and assert it stays inside webDistDir.
+  const resolvedBase = resolvePath(webDistDir);
+  const resolvedFile = resolvePath(webDistDir, pathname === "/" ? "index.html" : pathname);
+  if (!resolvedFile.startsWith(resolvedBase + "/") && resolvedFile !== resolvedBase) {
+    return false;
+  }
+  const filePath = resolvedFile;
 
   try {
     const content = await readFile(filePath);

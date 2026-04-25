@@ -7,7 +7,8 @@ import { toResetIso } from "./usageUtils";
 
 const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000;
 const OAUTH_REFRESH_URL = "https://auth.openai.com/oauth/token";
-const OAUTH_REFRESH_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
+const OAUTH_REFRESH_CLIENT_ID =
+  process.env.OCTOGENT_CODEX_OAUTH_CLIENT_ID ?? "app_EMoamEEZ73f0CkXaXp7hrann";
 const OAUTH_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage";
 
 const resolveCodexHome = (env: NodeJS.ProcessEnv): string => {

@@ -70,6 +70,13 @@ export const parseTentacleSyncBaseRef = (
     };
   }
 
+  if (trimmed.startsWith("-") || !/^[a-zA-Z0-9._\-/]+$/.test(trimmed)) {
+    return {
+      baseRef: null,
+      error: "baseRef contains invalid characters.",
+    };
+  }
+
   return {
     baseRef: trimmed,
     error: null,
@@ -128,6 +135,18 @@ export const parseTentaclePullRequestCreateInput = (
       body: "",
       baseRef: null,
       error: "Pull request baseRef cannot be empty.",
+    };
+  }
+
+  if (
+    normalizedBaseRef.length > 0 &&
+    (normalizedBaseRef.startsWith("-") || !/^[a-zA-Z0-9._\-/]+$/.test(normalizedBaseRef))
+  ) {
+    return {
+      title: null,
+      body: "",
+      baseRef: null,
+      error: "Pull request baseRef contains invalid characters.",
     };
   }
 

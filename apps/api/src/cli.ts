@@ -240,10 +240,15 @@ const startServer = async () => {
   process.on("SIGINT", () => void shutdown());
   process.on("SIGTERM", () => void shutdown());
 
-  const { host, port: activePort } = await apiServer.start(port, "127.0.0.1");
+  const bindHost = process.env.OCTOGENT_HOST?.trim() || process.env.HOST?.trim() || "127.0.0.1";
+  const { host, port: activePort } = await apiServer.start(port, bindHost);
+  // When bound to a wildcard address, route local CLI calls (and the
+  // runtime metadata cache) through 127.0.0.1 so they still resolve.
+  const isWildcardBind = host === "0.0.0.0" || host === "::" || host === "::0";
+  const localApiBaseUrl = `http://${isWildcardBind ? "127.0.0.1" : host}:${activePort}`;
   const apiBaseUrl = `http://${host}:${activePort}`;
   writeRuntimeMetadata(projectStateDir, {
-    apiBaseUrl,
+    apiBaseUrl: localApiBaseUrl,
     host,
     port: activePort,
     pid: process.pid,
@@ -253,7 +258,7 @@ const startServer = async () => {
 
   const hasWebDist = existsSync(webDistDir);
   if (hasWebDist) {
-    maybeOpenBrowser(apiBaseUrl);
+    maybeOpenBrowser(localApiBaseUrl);
   }
 
   console.log();
@@ -265,6 +270,14 @@ const startServer = async () => {
     console.log(`  UI:      ${apiBaseUrl}`);
   } else {
     console.log("  UI:      bundled web assets are missing from this install");
+  }
+  if (isWildcardBind) {
+    console.log(`  Bound to ${host}:${activePort} — reachable from any host on the network.`);
+    if (process.env.OCTOGENT_ALLOW_REMOTE_ACCESS !== "1") {
+      console.log(
+        "  Note:    set OCTOGENT_ALLOW_REMOTE_ACCESS=1 to permit non-loopback Origin/Host headers.",
+      );
+    }
   }
   if (!isInitialized) {
     console.log("  Setup:   workspace is not initialized yet; use the in-app setup flow");
