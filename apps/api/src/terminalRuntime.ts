@@ -6,6 +6,7 @@ import type { TerminalSnapshot } from "@octogent/core";
 import type { WebSocket } from "ws";
 import { WebSocketServer } from "ws";
 
+import type { ApiFailure } from "./terminalRuntime/apiFailureDetector";
 import { createChannelMessaging } from "./terminalRuntime/channelMessaging";
 import {
   DEFAULT_AGENT_PROVIDER,
@@ -13,6 +14,7 @@ import {
   TERMINAL_ID_PREFIX,
   TERMINAL_MAX_CONCURRENT_SESSIONS,
 } from "./terminalRuntime/constants";
+import { type RetryEntry, createRetryQueue } from "./terminalRuntime/retryQueue";
 import {
   conversationExportMarkdown,
   deleteAllConversations,
@@ -57,6 +59,17 @@ export { isTerminalAgentProvider, isTerminalCompletionSoundId } from "./terminal
 export { RuntimeInputError } from "./terminalRuntime/types";
 
 export const MAX_CHILDREN_PER_PARENT = 9;
+
+const parseRetryEnvNumber = (raw: string | undefined, fallback: number): number => {
+  if (!raw) {
+    return fallback;
+  }
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return parsed;
+};
 
 export const createTerminalRuntime = ({
   workspaceCwd,
@@ -240,6 +253,8 @@ export const createTerminalRuntime = ({
     });
   };
 
+  let retryQueue: ReturnType<typeof createRetryQueue> | null = null;
+
   const sessionRuntime = createSessionRuntime({
     websocketServer,
     terminals,
@@ -253,6 +268,60 @@ export const createTerminalRuntime = ({
     onStateChange: broadcastTerminalStateChanged,
     onSessionStart: markTerminalRunning,
     onSessionEnd: markTerminalEnded,
+    onApiFailureDetected: (terminalId, failure) => {
+      retryQueue?.recordFailure(terminalId, failure);
+    },
+    onAgentIdle: (terminalId) => {
+      retryQueue?.markIdle(terminalId);
+    },
+    onOperatorInput: (terminalId) => {
+      retryQueue?.clearOnSuccess(terminalId);
+    },
+  });
+
+  const retryStateFilePath = join(stateDir, "state", "retry-queue.json");
+  const retryConfig = {
+    initialDelayMs: parseRetryEnvNumber(process.env.OCTOGENT_RETRY_INITIAL_DELAY_MS, 60_000),
+    multiplier: parseRetryEnvNumber(process.env.OCTOGENT_RETRY_MULTIPLIER, 2),
+    maxDelayMs: parseRetryEnvNumber(process.env.OCTOGENT_RETRY_MAX_DELAY_MS, 30 * 60_000),
+  };
+  const retryPromptText = process.env.OCTOGENT_RETRY_PROMPT?.trim() || "Please continue.";
+  const RETRY_BRACKETED_PASTE_START = "\x1b[200~";
+  const RETRY_BRACKETED_PASTE_END = "\x1b[201~";
+
+  retryQueue = createRetryQueue({
+    stateFilePath: retryStateFilePath,
+    config: retryConfig,
+    clock: { now: () => Date.now() },
+    scheduleTimer: (callback, delayMs) => {
+      const timer = setTimeout(callback, delayMs);
+      return timer as unknown as number;
+    },
+    cancelTimer: (id) => {
+      clearTimeout(id as unknown as ReturnType<typeof setTimeout>);
+    },
+    executeRetry: (terminalId) => {
+      const payload = `${RETRY_BRACKETED_PASTE_START}${retryPromptText}${RETRY_BRACKETED_PASTE_END}\r`;
+      return sessionRuntime.writeSystemInput(terminalId, payload);
+    },
+    onChange: (terminalId, entry) => {
+      const session = sessions.get(terminalId);
+      if (session) {
+        for (const client of session.clients) {
+          if (client.readyState === 1) {
+            client.send(JSON.stringify({ type: "retry", entry }));
+          }
+        }
+        for (const listener of session.directListeners) {
+          listener({ type: "retry", entry });
+        }
+      }
+      broadcastTerminalEvent({
+        type: "terminal-retry-changed",
+        terminalId,
+        entry,
+      });
+    },
   });
 
   const gitOps = createGitOperations({
@@ -790,8 +859,25 @@ export const createTerminalRuntime = ({
       return sessionRuntime.resizeSession(terminalId, cols, rows);
     },
 
+    listRetryEntries(): RetryEntry[] {
+      return retryQueue?.listEntries() ?? [];
+    },
+
+    getRetryEntry(terminalId: string): RetryEntry | null {
+      return retryQueue?.getEntry(terminalId) ?? null;
+    },
+
+    cancelRetry(terminalId: string): boolean {
+      return retryQueue?.cancelRetry(terminalId) ?? false;
+    },
+
+    triggerRetryNow(terminalId: string): boolean {
+      return retryQueue?.triggerNow(terminalId) ?? false;
+    },
+
     async close() {
       sessionRuntime.close();
+      retryQueue?.close();
       await registryPersistence.close();
       for (const client of terminalEventClients) {
         client.close();

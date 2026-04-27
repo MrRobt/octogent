@@ -44,6 +44,7 @@ import {
   handleMonitorFeedRoute,
   handleMonitorRefreshRoute,
 } from "./monitorRoutes";
+import { handleRetriesCollectionRoute, handleTerminalRetryRoute } from "./retryRoutes";
 import type {
   ApiRouteHandler,
   RouteHandlerContext,
@@ -148,10 +149,12 @@ const API_ROUTE_MAP: ReadonlyMap<string, readonly ApiRouteHandler[]> = new Map([
     [
       handleTerminalsCollectionRoute,
       handleTerminalPruneRoute,
+      handleTerminalRetryRoute,
       handleTerminalActionRoute,
       handleTerminalItemRoute,
     ],
   ],
+  ["retries", [handleRetriesCollectionRoute]],
   ["tentacles", [handleTentacleGitRoute, handleTentacleGitPullRequestRoute]],
   ["code-intel", [handleCodeIntelEventsRoute]],
 ]);

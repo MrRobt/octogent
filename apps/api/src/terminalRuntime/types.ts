@@ -14,11 +14,17 @@ import type { IPty } from "node-pty";
 import type { WebSocket } from "ws";
 
 import type { AgentRuntimeState, AgentStateTracker } from "../agentStateDetection";
+import type { RetryEntry } from "./retryQueue";
 
 export type TerminalStateMessage = {
   type: "state";
   state: AgentRuntimeState;
   toolName?: string;
+};
+
+export type TerminalRetryMessage = {
+  type: "retry";
+  entry: RetryEntry | null;
 };
 
 export type TerminalOutputMessage = {
@@ -45,7 +51,8 @@ export type TerminalServerMessage =
   | TerminalOutputMessage
   | TerminalHistoryMessage
   | TerminalRenameMessage
-  | TerminalActivityMessage;
+  | TerminalActivityMessage
+  | TerminalRetryMessage;
 
 export type DirectSessionListener = (message: TerminalServerMessage) => void;
 

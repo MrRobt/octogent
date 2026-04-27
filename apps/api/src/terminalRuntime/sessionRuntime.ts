@@ -7,6 +7,7 @@ import { type IPty, spawn } from "node-pty";
 import type { WebSocket, WebSocketServer } from "ws";
 
 import { type AgentRuntimeState, AgentStateTracker } from "../agentStateDetection";
+import { type ApiFailure, detectApiFailure } from "./apiFailureDetector";
 import {
   DEFAULT_AGENT_PROVIDER,
   TERMINAL_BOOTSTRAP_COMMANDS,
@@ -50,6 +51,9 @@ type CreateSessionRuntimeOptions = {
   onStateChange?: (terminalId: string, state: AgentRuntimeState, toolName?: string) => void;
   onSessionStart?: (terminalId: string, details: TerminalSessionStartDetails) => void;
   onSessionEnd?: (terminalId: string, details: TerminalSessionEndDetails) => void;
+  onApiFailureDetected?: (terminalId: string, failure: ApiFailure) => void;
+  onAgentIdle?: (terminalId: string) => void;
+  onOperatorInput?: (terminalId: string) => void;
 };
 
 const ANSI_BEL = String.fromCharCode(0x07);
@@ -73,6 +77,9 @@ export const createSessionRuntime = ({
   onStateChange,
   onSessionStart,
   onSessionEnd,
+  onApiFailureDetected,
+  onAgentIdle,
+  onOperatorInput,
 }: CreateSessionRuntimeOptions) => {
   const DEFAULT_PTY_COLS = 120;
   const DEFAULT_PTY_ROWS = 35;
@@ -189,6 +196,10 @@ export const createSessionRuntime = ({
       state: nextState,
       ...(session.lastToolName ? { toolName: session.lastToolName } : {}),
     });
+
+    if (nextState === "idle") {
+      onAgentIdle?.(sessionId);
+    }
   };
 
   const resolveSession =
@@ -615,6 +626,19 @@ export const createSessionRuntime = ({
         data: chunk,
       });
       emitStateIfChanged(session, sessionId, nextState);
+
+      if (onApiFailureDetected) {
+        const failure = detectApiFailure(chunk);
+        if (failure) {
+          appendDebugLog(
+            session,
+            `api-failure session=${sessionId} kind=${failure.kind}${
+              failure.statusCode ? ` status=${failure.statusCode}` : ""
+            }`,
+          );
+          onApiFailureDetected(sessionId, failure);
+        }
+      }
     });
 
     const exitDisposable = session.pty.onExit(({ exitCode, signal }) => {
@@ -712,6 +736,7 @@ export const createSessionRuntime = ({
               `ws-input session=${sessionId} data=${JSON.stringify(payload.data)}`,
             );
             session.pty.write(payload.data);
+            onOperatorInput?.(sessionId);
             if (/[\r\n]/.test(payload.data)) {
               emitStateIfChanged(
                 session,
@@ -825,6 +850,20 @@ export const createSessionRuntime = ({
     }
 
     session.pty.write(data);
+    onOperatorInput?.(terminalId);
+    if (/[\r\n]/.test(data)) {
+      emitStateIfChanged(session, terminalId, session.stateTracker.observeSubmit(Date.now()));
+    }
+    return true;
+  };
+
+  const writeSystemInput = (terminalId: string, data: string): boolean => {
+    const session = sessions.get(terminalId);
+    if (!session || session.isClosed) {
+      return false;
+    }
+
+    session.pty.write(data);
     if (/[\r\n]/.test(data)) {
       emitStateIfChanged(session, terminalId, session.stateTracker.observeSubmit(Date.now()));
     }
@@ -868,6 +907,7 @@ export const createSessionRuntime = ({
     connectDirect,
     startSession,
     writeInput,
+    writeSystemInput,
     resizeSession,
     releaseSessionKeepAlive,
     close,

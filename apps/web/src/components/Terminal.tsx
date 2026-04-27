@@ -4,6 +4,7 @@ import { FileText, X } from "lucide-react";
 import { buildTerminalSocketUrl } from "../runtime/runtimeEndpoints";
 import { type AgentRuntimeState, AgentStateBadge, isAgentRuntimeState } from "./AgentStateBadge";
 import { TerminalPromptPicker } from "./TerminalPromptPicker";
+import { TerminalRetryIndicator, type TerminalRetryEntry } from "./TerminalRetryIndicator";
 import { replayTerminalHistory } from "./terminalReplay";
 import { wheelDeltaToScrollLines } from "./terminalWheel";
 
@@ -46,12 +47,18 @@ type TerminalActivityMessage = {
   type: "activity";
 };
 
+type TerminalRetryMessage = {
+  type: "retry";
+  entry: TerminalRetryEntry | null;
+};
+
 type TerminalServerMessage =
   | TerminalStateMessage
   | TerminalOutputMessage
   | TerminalHistoryMessage
   | TerminalRenameMessage
-  | TerminalActivityMessage;
+  | TerminalActivityMessage
+  | TerminalRetryMessage;
 
 const PromptInjectIcon = () => (
   <svg
@@ -81,6 +88,7 @@ export const Terminal = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [connectionState, setConnectionState] = useState("connecting");
   const [agentState, setAgentRuntimeState] = useState<AgentRuntimeState>("idle");
+  const [retryEntry, setRetryEntry] = useState<TerminalRetryEntry | null>(null);
   const [isPromptBannerDismissed, setIsPromptBannerDismissed] = useState(false);
   const [isPromptPickerOpen, setIsPromptPickerOpen] = useState(false);
   const promptPickerBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -212,6 +220,11 @@ export const Terminal = ({
 
           if (payload.type === "activity") {
             onTerminalActivityRef.current?.(terminalId);
+            return;
+          }
+
+          if (payload.type === "retry") {
+            setRetryEntry(payload.entry ?? null);
             return;
           }
         } catch {
@@ -510,6 +523,7 @@ export const Terminal = ({
               />
             </div>
           )}
+          {retryEntry && <TerminalRetryIndicator terminalId={terminalId} entry={retryEntry} />}
           <AgentStateBadge state={agentState} />
         </div>
       </div>

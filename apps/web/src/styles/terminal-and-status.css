@@ -239,6 +239,47 @@
   border-color: rgba(0, 0, 0, 0.45);
 }
 
+.terminal-retry-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.65rem;
+  line-height: 1.2;
+  color: #ffd28a;
+  background: rgba(248, 161, 80, 0.14);
+  border: 1px solid rgba(248, 161, 80, 0.45);
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.terminal-retry-indicator-label {
+  letter-spacing: 0.01em;
+}
+
+.terminal-retry-indicator-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 9999px;
+}
+
+.terminal-retry-indicator-btn:hover {
+  background: rgba(248, 161, 80, 0.25);
+}
+
+.terminal-retry-indicator-btn:disabled {
+  cursor: progress;
+  opacity: 0.55;
+}
+
 .terminal-mount {
   min-height: 0;
   overflow: hidden;

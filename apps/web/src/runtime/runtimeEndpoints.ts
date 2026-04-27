@@ -76,6 +76,19 @@ export const buildTerminalsUrl = (runtimeBaseUrl = readRuntimeBaseUrl()) => {
   return buildAbsoluteUrl(runtimeBaseUrl, "/api/terminals");
 };
 
+export const buildTerminalRetryActionUrl = (
+  terminalId: string,
+  action: "cancel" | "now",
+  runtimeBaseUrl = readRuntimeBaseUrl(),
+) => {
+  const path = `/api/terminals/${encodeURIComponent(terminalId)}/retry/${action}`;
+  if (!runtimeBaseUrl) {
+    return path;
+  }
+
+  return buildAbsoluteUrl(runtimeBaseUrl, path);
+};
+
 export const buildCodexUsageUrl = (runtimeBaseUrl = readRuntimeBaseUrl()) => {
   if (!runtimeBaseUrl) {
     return "/api/codex/usage";
